@@ -13,9 +13,14 @@ function thumb_vote_install(){
           'unsigned' => TRUE,
           'not null' => TRUE
         ),
-        'nid' => array(
+        'id' => array(
           'type' => 'int',
           'unsigned' => TRUE,
+          'not null' => TRUE
+        ),
+        'entity_type' => array(
+          'type' => 'varchar',
+          'length' => '64',
           'not null' => TRUE
         ),
         'vote' => array(
@@ -24,7 +29,10 @@ function thumb_vote_install(){
           'not null' => TRUE
         )
       ),
-      'primary key' => array('uid','nid')
+      'primary key' => array('uid','id','entity_type'),
+      'indexes'     => array(
+        'id_entity_type'    => array('id','entity_type')
+      )
     );
     db_create_table('thumbvotes', $vote_schema);
   }

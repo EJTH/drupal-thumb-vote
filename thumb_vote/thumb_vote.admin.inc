@@ -5,10 +5,16 @@
  */
 function thumb_vote_admin_settings(){
   //Get node type options.
-  $types = node_type_get_types();
+  //$types = node_type_get_types();
+  $entity_info = entity_get_info();
+  
   $options = array();
-  foreach($types as $n){
-      $options[$n->type] = $n->name;
+  foreach($entity_info as $i){
+      if(isset($i['bundles'])){
+        foreach($i['bundles'] as $bk => $b){
+          $options[$bk] = $bk;
+        }
+      }
   }
 
   $form['thumbvote_node_types'] = array(

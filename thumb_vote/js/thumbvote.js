@@ -11,12 +11,17 @@
      */
     function doVote(vote,$voteWrapper){
       var $voteSumLbl = $voteWrapper.find('.votes');
-      var nid = $voteWrapper.attr('data-nid');
+      var id = $voteWrapper.attr('data-id');
+      var type = $voteWrapper.attr('data-enttype');
       
       //POST vote to the JSON interface, see thumb_vote.module
       $.post(
         Drupal.settings.basePath + '?q=json/thumbvote',
-        {vote:vote,nid:nid},
+        {
+          vote :vote,
+          id   : id,
+          type : type
+        },
 
       // Callback for the vote request. Handles error message, 
       // highlight of active selection as well as showing the new vote sum

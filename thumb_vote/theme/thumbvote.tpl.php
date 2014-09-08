@@ -1,4 +1,4 @@
-<div class="thumb-vote" data-nid="<?php echo $nid;?>">
+<div class="thumb-vote" data-id="<?php echo $entid; ?>" data-enttype="<?php echo $type; ?>">
   <span class="error-msg"></span>
   <span class="votes <?php echo
   $votes != 0 
