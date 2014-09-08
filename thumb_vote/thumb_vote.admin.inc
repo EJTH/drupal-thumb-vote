@@ -7,23 +7,27 @@ function thumb_vote_admin_settings(){
   //Get node type options.
   //$types = node_type_get_types();
   $entity_info = entity_get_info();
+  //print_r($entity_info);
   
-  $options = array();
-  foreach($entity_info as $i){
-      if(isset($i['bundles'])){
-        foreach($i['bundles'] as $bk => $b){
-          $options[$bk] = $bk;
-        }
+  foreach($entity_info as $k => $i){
+    $options = array();
+    
+    if(isset($i['bundles'])){
+      foreach($i['bundles'] as $bk => $b){
+        $options[$bk] = $b['label'];
       }
+    }
+    
+    $form['thumbvote_entity_types_'.$k] = array(
+      '#type'     => 'checkboxes',
+      '#title'    => $i['label'],
+      '#options'  => $options,
+      '#default_value'  => variable_get('thumbvote_entity_types_'.$k, array('page')),
+    );
+    
   }
 
-  $form['thumbvote_node_types'] = array(
-    '#type'     => 'checkboxes',
-    '#title'    => t('Enable ratings for'),
-    '#options'  => $options,
-    '#default_value'  => variable_get('thumbvote_node_types', array('page')),
-    '#description'    => t('Sets the content types rateable with this plugin')
-  );
+  
   
   $form['thumbvote_render_weight'] = array(
     '#type'     => 'textfield',
@@ -60,5 +64,16 @@ function thumb_vote_admin_settings(){
  * @param type $form_state
  */
 function thumb_vote_form_submit($form, $form_state){
-    
+  $entity_info = entity_get_info();
+  
+  $entity_types = array();
+  
+  foreach($entity_info as $k => $i){
+    foreach($form_state['values']['thumbvote_entity_types_'.$k] as $k => $v){
+      if($v){
+        $entity_types[] = $v;
+      }
+    }
+  }
+  variable_set('thumbvote_entity_types',$entity_types);
 }

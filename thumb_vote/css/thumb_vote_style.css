@@ -1,6 +1,10 @@
 .thumb-vote {
   float:right;
   position:relative;
+  background: #fff;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  padding:4px;
 }
 
 .thumb-vote .error-msg {
