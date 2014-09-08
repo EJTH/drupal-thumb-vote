@@ -46,7 +46,7 @@ function thumb_vote_theme($existing, $type, $theme, $path) {
       'template' => 'thumbvote',
       'path'     => drupal_get_path('module', 'thumb_vote').'/theme'
     )
-  );
+  ); 
 }
 
 
@@ -180,7 +180,7 @@ function _thumb_vote_get_user_vote($uid, $nid){
  * @param int $id
  * @return int|boolean
  */
-function _thumb_vote_get_vote_sum($id,$entityType='node'){
+function _thumb_vote_get_vote_sum($nid){
   $vote_query = db_query('SELECT SUM(vote) AS votes '
       . 'FROM thumbvotes WHERE nid = :nid', array(':nid' => $nid));
   $vote_result = $vote_query->fetchObject();
