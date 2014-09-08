@@ -1,0 +1,203 @@
+<?php
+/**
+ * Menu hook implementation
+ * @return array
+ */
+function thumb_vote_menu(){
+  $items = array(
+    'json/thumbvote' => array(
+      'title'              => 'Thumbvote JSON interface',
+      'description'        => 'JSON interface for vote submittal through POST',
+      'page callback'      => '_thumb_vote_json_do_vote',
+      'access callback'    => TRUE,
+      'type'               => MENU_CALLBACK
+    ),
+    'admin/config/thumbvote' => array(
+        'title'            => 'Thumbvote',
+        'description'      => 'Setting for thumbvote module',
+        'weight'           => -5,
+        'page callback'    => 'system_admin_menu_block_page',
+        'access arguments' => array('administer site configuration'),
+    ),
+    'admin/config/thumbvote/settings' => array(
+        'title'            => 'Thumbvote settings',
+        'description'      => 'Change behavior of thumbvotes. Decide what content types you want to be rateable',
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('thumb_vote_admin_settings'),
+        'access arguments' => array('administer site configuration'),
+        'file'             => 'thumb_vote.admin.inc'
+    )
+  );
+  return $items;
+}
+
+
+/**
+ * Implements hook_theme();
+ */
+function thumb_vote_theme($existing, $type, $theme, $path) {
+  return array(
+    'thumbvote' => array(
+      'variables' => array(
+        'nid'       => NULL,
+        'votes'     => NULL,
+        'user_vote' => NULL
+      ),
+      'template' => 'thumbvote',
+      'path'     => drupal_get_path('module', 'thumb_vote').'/theme'
+    )
+  );
+}
+
+
+/**
+ * Entity view hook for adding additional markup for the thumb voting prior to rendering.
+ * @param type $node
+ * @param type $type
+ * @param type $view_mode
+ * @param type $lang
+ */
+function thumb_vote_entity_view($node, $type, $view_mode, $lang){
+  global $user;
+  
+  //Add CSS and clientside scripts to the rendered page.
+  drupal_add_css(drupal_get_path('module', 'thumb_vote').'/css/thumb_vote_style.css');
+  drupal_add_js(drupal_get_path('module','thumb_vote').'/js/thumbvote.js');
+  
+  
+  //If the entity is a node
+  if($type == 'node' && in_array($node->type, variable_get('thumbvote_node_types', array()))){
+    
+    
+    $nid       = $node->nid;
+    $votes     = _thumb_vote_get_vote_sum($nid);
+    $user_vote = _thumb_vote_get_user_vote($user->uid,$nid);
+    
+    $node->content['vote'] = array(
+      '#markup' => theme('thumbvote',
+        array(
+          'nid'       => $nid,
+          'votes'     => $votes, 
+          'user_vote' => $user_vote
+        )
+      ),
+      '#weight' => variable_get('thumbvote_render_weight',-1)
+    );
+
+  } else {
+    print_r($node);
+  }
+  
+}
+
+
+/**
+ * Page callback for thumb vote JSON interface
+ * @global object $user
+ */
+function _thumb_vote_json_do_vote(){
+  global $user;
+  
+  //Response is passed to the client later on.
+  $response = array('success' => false);
+  
+  //If required data is supplied
+  if(isset($_POST) 
+      && is_numeric($_POST['nid']) 
+      && is_numeric($_POST['vote'])){
+    
+    $nid  = (int) $_POST['nid'];
+    $uid  = (int) $user->uid;
+    $vote = (int) $_POST['vote'];
+
+    //Prevent skiddies from rigging the vote.
+    if(abs($vote) > 1){ $vote = 0; }
+    
+    if($nid && $uid){
+      
+      _thumb_vote_save($vote, $nid, $uid);
+      
+      $response = array(
+        'success' => true,
+        'votes'   => _thumb_vote_get_vote_sum($nid),
+        'userVote' => $vote
+      );
+      
+    } else {
+      $response['error'] = t('Only registered users can vote!');
+    }
+  } else {
+    $response['error'] = t('Something mysteriously happened!');
+  }
+  
+  drupal_json_output($response);
+}
+
+/**
+ * Save vote to the database.
+ * @param int $vote Vote -1 | 0 | 1
+ * @param int $nid  Node ID
+ * @param int $uid  User ID
+ */
+function _thumb_vote_save($vote,$nid,$uid){
+  //Remove any previous votes by this user.
+  db_query('DELETE FROM thumbvotes WHERE nid = :nid AND uid = :uid',array(
+    ':nid' => $nid,
+    ':uid' => $uid
+  ));
+
+  if($vote != 0){
+    db_query('INSERT INTO thumbvotes (nid,uid,vote) VALUES (:nid,:uid,:vote)',array(
+      ':nid'  => $nid,
+      ':uid'  => $uid,
+      ':vote' => $vote
+    ));
+  }
+}
+
+/**
+ * Return vote given by user with $uid and corresponding node id
+ * @param int $uid
+ * @param int $nid
+ * @return int -1 | 0 | 1
+ */
+function _thumb_vote_get_user_vote($uid, $nid){
+  $v = db_query("SELECT vote FROM thumbvotes "
+      . "WHERE uid = :uid AND nid = :nid",
+      array(
+        ':uid' => $uid,
+        ':nid' => $nid
+      )
+  )->fetchColumn();
+  
+  return (int) $v;
+}
+
+
+/**
+ * Returns the current vote sum for node $nid. Returns false on error 
+ * (ie. if you specify an invalid nid).
+ * @param int $id
+ * @return int|boolean
+ */
+function _thumb_vote_get_vote_sum($id,$entityType='node'){
+  $vote_query = db_query('SELECT SUM(vote) AS votes '
+      . 'FROM thumbvotes WHERE nid = :nid', array(':nid' => $nid));
+  $vote_result = $vote_query->fetchObject();
+  
+  return $vote_result ? (int)$vote_result->votes : false;
+}
+
+/**
+ * Returns the positive vote percentage for $nid
+ * @return int Percentage of positive votes.
+ */
+function _thumb_vote_get_vote_percentage($nid){
+  $votes_total = db_query("SELECT COUNT(*) AS c FROM thumbvotes "
+      . "WHERE nid = :nid",array(':nid' => $nid))->fetchColumn();
+  
+  $votes_positive = db_query("SELECT COUNT(*) AS c FROM thumbvotes "
+      . "WHERE nid = :nid AND vote > 0",array(':nid' => $nid))->fetchColumn();
+  
+  return ($votes_positive / $votes_total) * 100;
+}

@@ -1,0 +1,38 @@
+<?php
+/**
+ * Install hook for thumb votes:
+ * - Creates database schema.
+ */
+function thumb_vote_install(){
+  if(!db_table_exists('thumbvotes')){
+    $vote_schema = array(
+      'description' => 'Stores whom voted, on what node and what they voted',
+      'fields' => array(
+        'uid' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        ),
+        'nid' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        ),
+        'vote' => array(
+          'type' => 'int',
+          'unsigned' => FALSE,
+          'not null' => TRUE
+        )
+      ),
+      'primary key' => array('uid','nid')
+    );
+    db_create_table('thumbvotes', $vote_schema);
+  }
+}
+/**
+ * Uninstall hook. 
+ * - Removes unused schema.
+ */
+function thumb_vote_uninstall(){
+  db_drop_table('thumbvotes');
+}

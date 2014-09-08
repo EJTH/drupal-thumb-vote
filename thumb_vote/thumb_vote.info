@@ -1,0 +1,4 @@
+name = Thumb vote
+description = Enables vote up/down functionality on any node type.
+core = 7.x
+configure = admin/config/thumbvote/settings
