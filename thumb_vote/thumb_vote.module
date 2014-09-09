@@ -198,7 +198,8 @@ function _thumb_vote_get_user_vote($uid, $id, $type){
 function _thumb_vote_get_votes($id, $type, $mode){
   $votes = '';
   switch($mode){
-    case 0: $votes = '';
+    case 0: 
+      $votes = '';
     break;
     case 1: 
       $votes = _thumb_vote_get_vote_sum($id, $type);
@@ -212,9 +213,10 @@ function _thumb_vote_get_votes($id, $type, $mode){
         . _thumb_vote_span_wrap(-1*_thumb_vote_get_negative($id, $type),'negative');
     break;
     case 3: 
+      $percent = _thumb_vote_get_vote_percentage($id, $type);
       $votes = _thumb_vote_span_wrap(
-          _thumb_vote_get_vote_percentage($id, $type).'%', 
-          'positive'
+          $percent.'%', 
+          ($percent >= 50 ? 'positive' : 'negative')
         );
     break;
   }
