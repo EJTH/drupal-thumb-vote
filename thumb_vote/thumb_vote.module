@@ -7,21 +7,21 @@ function thumb_vote_menu(){
   $items = array(
     'json/thumbvote' => array(
       'title'              => 'Thumbvote JSON interface',
-      'description'        => 'JSON interface for vote submittal through POST',
+      'description'        => t('JSON interface for vote submittal through POST'),
       'page callback'      => '_thumb_vote_json_do_vote',
       'access callback'    => TRUE,
       'type'               => MENU_CALLBACK
     ),
     'admin/config/thumbvote' => array(
         'title'            => 'Thumbvote',
-        'description'      => 'Setting for thumbvote module',
+        'description'      => t('Setting for thumbvote module'),
         'weight'           => -5,
         'page callback'    => 'system_admin_menu_block_page',
         'access arguments' => array('administer site configuration'),
     ),
     'admin/config/thumbvote/settings' => array(
         'title'            => 'Thumbvote settings',
-        'description'      => 'Change behavior of thumbvotes. Decide what content types you want to be rateable',
+        'description'      => t('Change behavior of thumbvotes. Decide what content types you want to be rateable'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('thumb_vote_admin_settings'),
         'access arguments' => array('administer site configuration'),
@@ -39,9 +39,10 @@ function thumb_vote_theme($existing, $type, $theme, $path) {
   return array(
     'thumbvote' => array(
       'variables' => array(
-        'id'       => NULL,
-        'votes'     => NULL,
-        'user_vote' => NULL
+        'id'            => NULL,
+        'votes'         => NULL,
+        'user_vote'     => NULL,
+        'display_type'  => NULL
       ),
       'template' => 'thumbvote',
       'path'     => drupal_get_path('module', 'thumb_vote').'/theme'
@@ -79,7 +80,7 @@ function thumb_vote_entity_view($entity, $type, $view_mode, $lang){
     $entity->content['vote'] = array(
       '#markup' => theme('thumbvote',
         array(
-          'entid'        => $id,
+          'entid'     => $id,
           'type'      => $enttype,
           'votes'     => $votes, 
           'user_vote' => $user_vote

@@ -20,7 +20,7 @@ function thumb_vote_install(){
         ),
         'entity_type' => array(
           'type' => 'varchar',
-          'length' => '64',
+          'length' => '128',
           'not null' => TRUE
         ),
         'vote' => array(
