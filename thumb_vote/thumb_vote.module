@@ -65,13 +65,13 @@ function thumb_vote_entity_view($entity, $type, $view_mode, $lang){
   drupal_add_css(drupal_get_path('module', 'thumb_vote').'/css/thumb_vote_style.css');
   drupal_add_js(drupal_get_path('module','thumb_vote').'/js/thumbvote.js');
   
+  
   $entity_info = entity_extract_ids($type,$entity);
-  $enttype = $entity_info[2]; 
-  //If the entity is a node
+  
+  $enttype   = $entity_info[2];
+  $id        = $entity_info[0];
+  
   if(in_array($enttype, variable_get('thumbvote_entity_types', array()))){
-    
-    
-    $id        = $entity_info[0];
     
     $display_mode = variable_get('thumbvote_display_mode',1);
     $votes     = _thumb_vote_get_votes($id, $enttype, $display_mode);
