@@ -149,20 +149,26 @@ function _thumb_vote_json_do_vote(){
  * @param int $uid  User ID
  */
 function _thumb_vote_save($vote, $id, $type, $uid){
+  
+  
   //Remove any previous votes by this user.
-  db_query('DELETE FROM thumbvotes WHERE id = :id AND entity_type = :type AND uid = :uid',array(
-    ':id'   => $id,
-    ':type' => $type,
-    ':uid'  => $uid
-  ));
+  db_delete('thumbvotes')
+    ->condition('uid',$uid)
+    ->condition('entity_type',$type)
+    ->condition('id',$id)
+  ->execute();
+  
+  
 
   if($vote != 0){
-    db_query('INSERT INTO thumbvotes (id,entity_type,uid,vote) VALUES (:id,:type,:uid,:vote)',array(
-      ':id'   => $id,
-      ':type' => $type,
-      ':uid'  => $uid,
-      ':vote' => $vote
-    ));
+    db_insert('thumbvotes')
+      ->fields(array(
+        'id'          => $id,
+        'uid'         => $uid,
+        'entity_type' => $type,
+        'vote'        => $vote
+      ))
+    ->execute();
   }
 }
 
@@ -173,14 +179,12 @@ function _thumb_vote_save($vote, $id, $type, $uid){
  * @return int -1 | 0 | 1
  */
 function _thumb_vote_get_user_vote($uid, $id, $type){
-  $v = db_query("SELECT vote FROM thumbvotes "
-      . "WHERE uid = :uid AND id = :id AND entity_type = :type",
-      array(
-        ':uid'  => $uid,
-        ':id'   => $id,
-        ':type' => $type
-      )
-  )->fetchColumn();
+  $v = db_select('thumbvotes')
+    ->fields('thumbvotes',array('vote'))
+    ->condition('uid',$uid)
+    ->condition('id',$id)
+    ->condition('entity_type',$type)
+  ->execute()->fetchColumn();
   
   return (int) $v;
 }
@@ -222,6 +226,15 @@ function _thumb_vote_span_wrap($content,$class){
   return '<span class="'.$class.'">'.$content.'</span>';
 }
 
+function _thumb_vote_count_query($id,$type){
+  $vote_query = db_select('thumbvotes')
+      ->condition('id',$id)
+      ->condition('entity_type',$type);
+  
+  
+  return $vote_query;
+}
+
 /**
  * Returns the current vote sum for node $id. Returns false on error 
  * (ie. if you specify an invalid id).
@@ -229,12 +242,11 @@ function _thumb_vote_span_wrap($content,$class){
  * @return int|boolean
  */
 function _thumb_vote_get_vote_sum($id, $type){
+  $vote_query = _thumb_vote_count_query($id, $type);
   
-  $vote_query = db_query('SELECT SUM(vote) AS votes '
-      . 'FROM thumbvotes WHERE id = :id AND entity_type = :type', 
-      array(':id' => $id,':type'=>$type)
-      );
-  $vote_result = $vote_query->fetchObject();
+  $vote_query->addExpression('SUM(vote)','votes');
+  
+  $vote_result = $vote_query->execute()->fetchObject();
   
   return $vote_result ? (int)$vote_result->votes : false;
 }
@@ -244,11 +256,16 @@ function _thumb_vote_get_vote_sum($id, $type){
  * @return int Percentage of positive votes.
  */
 function _thumb_vote_get_vote_percentage($id, $type){
-  $votes_total = db_query("SELECT COUNT(*) AS c FROM thumbvotes "
-      . "WHERE id = :id",array(':id' => $id))->fetchColumn();
+  $votes_total = _thumb_vote_count_query($id, $type);
+  $votes_total->addExpression('COUNT(*)','c');
   
-  $votes_positive = db_query("SELECT COUNT(*) AS c FROM thumbvotes "
-      . "WHERE id = :id AND vote > 0",array(':id' => $id))->fetchColumn();
+  $votes_total = $votes_total->execute()->fetchColumn();
+  
+  $votes_positive = _thumb_vote_count_query($id, $type);
+  $votes_positive->addExpression('COUNT(*)','c');
+  $votes_positive->condition('vote','0','>');
+  
+  $votes_positive = $votes_positive->execute()->fetchColumn();
   
   return ($votes_positive / $votes_total) * 100;
 }
@@ -261,11 +278,10 @@ function _thumb_vote_get_vote_percentage($id, $type){
  * @return type
  */
 function _thumb_vote_get_negative($id, $type){
-  $q = db_query("SELECT COUNT(*) AS positive FROM thumbvotes "
-      . "WHERE id = :id AND entity_type = :type AND vote < 0", array(
-        ':id'     => $id,
-        ':type'   => $type,
-  ));
+  $q = _thumb_vote_count_query($id, $type);
+  $q->addExpression('COUNT(*)','positive');
+  $q->condition('vote','0','<');
+  $q = $q->execute();
   
   return $q ? $q->fetchColumn() : 0;
 }
