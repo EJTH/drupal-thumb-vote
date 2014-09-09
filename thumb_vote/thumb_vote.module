@@ -72,7 +72,8 @@ function thumb_vote_entity_view($entity, $type, $view_mode, $lang){
     
     $id        = $entity_info[0];
     
-    $votes     = _thumb_vote_get_vote_sum($id, $enttype);
+    $display_mode = variable_get('thumbvote_display_mode',1);
+    $votes     = _thumb_vote_get_votes($id, $enttype, $display_mode);
     $user_vote = _thumb_vote_get_user_vote($user->uid, $id, $enttype);
     
     $entity->content['vote'] = array(
@@ -87,8 +88,6 @@ function thumb_vote_entity_view($entity, $type, $view_mode, $lang){
       '#weight' => variable_get('thumbvote_render_weight',-1)
     );
 
-  } else {
-    //print_r($entity);
   }
   
 }
@@ -116,6 +115,8 @@ function _thumb_vote_json_do_vote(){
     $uid  = (int) $user->uid;
     $vote = (int) $_POST['vote'];
 
+    $display_mode = variable_get('thumbvote_display_mode',1);
+    
     //Prevent skiddies from rigging the vote.
     if(abs($vote) > 1){ $vote = 0; }
     
@@ -124,9 +125,10 @@ function _thumb_vote_json_do_vote(){
       _thumb_vote_save($vote, $id, $type, $uid);
       
       $response = array(
-        'success' => true,
-        'votes'   => _thumb_vote_get_vote_sum($id,$type),
-        'userVote' => $vote
+        'success'     => true,
+        'votes'       => _thumb_vote_get_votes($id,$type, $display_mode),
+        'userVote'    => $vote,
+        'displayMode' => $display_mode
       );
       
     } else {
@@ -182,6 +184,42 @@ function _thumb_vote_get_user_vote($uid, $id, $type){
   return (int) $v;
 }
 
+/**
+ * Get representation of current votes based on the backend setting for display mode
+ * @param type $id
+ * @param type $type
+ * @return type
+ */
+function _thumb_vote_get_votes($id, $type, $mode){
+  $votes = '';
+  switch($mode){
+    case 0: $votes = '';
+    break;
+    case 1: 
+      $votes = _thumb_vote_get_vote_sum($id, $type);
+      if($votes != 0){
+        $votes = _thumb_vote_span_wrap($votes, ($votes > 0 ? 'positive' : 'negative') );
+      }
+    break;
+    case 2: 
+      $votes = _thumb_vote_span_wrap(_thumb_vote_get_positive($id, $type),'positive') 
+        . ' / ' 
+        . _thumb_vote_span_wrap(-1*_thumb_vote_get_negative($id, $type),'negative');
+    break;
+    case 3: 
+      $votes = _thumb_vote_span_wrap(
+          _thumb_vote_get_vote_percentage($id, $type).'%', 
+          'positive'
+        );
+    break;
+  }
+  
+  return $votes;
+}
+
+function _thumb_vote_span_wrap($content,$class){
+  return '<span class="'.$class.'">'.$content.'</span>';
+}
 
 /**
  * Returns the current vote sum for node $id. Returns false on error 
@@ -212,4 +250,37 @@ function _thumb_vote_get_vote_percentage($id, $type){
       . "WHERE id = :id AND vote > 0",array(':id' => $id))->fetchColumn();
   
   return ($votes_positive / $votes_total) * 100;
+}
+
+
+/**
+ * 
+ * @param type $id
+ * @param type $type
+ * @return type
+ */
+function _thumb_vote_get_negative($id, $type){
+  $q = db_query("SELECT COUNT(*) AS positive FROM thumbvotes "
+      . "WHERE id = :id AND entity_type = :type AND vote < 0", array(
+        ':id'     => $id,
+        ':type'   => $type,
+  ));
+  
+  return $q ? $q->fetchColumn() : 0;
+}
+
+/**
+ * 
+ * @param type $id
+ * @param type $type
+ * @return type
+ */
+function _thumb_vote_get_positive($id, $type){
+  $q = db_query("SELECT COUNT(*) AS positive FROM thumbvotes "
+      . "WHERE id = :id AND entity_type = :type AND vote > 0", array(
+        ':id'     => $id,
+        ':type'   => $type,
+  ));
+  
+  return $q ? $q->fetchColumn() : 0;
 }

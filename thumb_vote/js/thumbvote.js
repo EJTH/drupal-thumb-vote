@@ -28,19 +28,7 @@
       function(response){
         if(response.success){
           //Success! Lets update the vote count!
-          $voteSumLbl.text(response.votes);
-          
-          //style vote score if its not 0
-          $voteSumLbl.removeClass('negative');
-          $voteSumLbl.removeClass('positive');
-          
-          if(response.votes !== 0){
-            $voteSumLbl.addClass(
-              response.votes > 0 
-              ? 'positive' 
-              : 'negative'
-            );  
-          }
+          $voteSumLbl.html(response.votes);
           
           //Highlight the current selection with the css class 'active'.
           $voteWrapper.find('.up,.down').removeClass('active');

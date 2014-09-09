@@ -12,7 +12,7 @@ function thumb_vote_admin_settings(){
   
   $form['thumbvote_entity_type_fieldset'] = array(
     '#type'     => 'fieldset',
-    '#title'    => 'Enable vote for content types',
+    '#title'    => t('Enable vote for content types'),
     '#collapsible' => TRUE,
     '#collapsed'   => FALSE,
 
@@ -54,25 +54,26 @@ function thumb_vote_admin_settings(){
     '#type'     => 'textfield',
     '#title'    => t('Layout/render weight'),
     '#default_value' => variable_get('thumbvote_render_weight',-1),
-    '#description'   => t('Layout / render weight of the rating GUI, lower means '
-        . 'it would be displated higher up in the DOM, higher '
-        . 'value would make it go further down the DOM')
+    '#description'   => t('Layout / render weight of the rating GUI, lower means 
+        it would be displated higher up in the DOM, higher 
+        value would make it go further down the DOM')
   );
 
-  $form['thumbvote_display_settings']['thumbvote_show_sum'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Display vote sum'),
-    '#default_value' => variable_get('thumbvote_show_sum',true),
-    '#description'   => t('Show vote result as summary')
+  $display_options = array(
+    0 => t('Don\'t show ratings'),
+    1 => t('Show sum of votes'),
+    2 => t('Show positive and negative vote count'),
+    3 => t('Show positive votes as percentage')
   );
-
-
-  $form['thumbvote_display_settings']['thumbvote_show_percentage'] = array(
-    '#type'   => 'checkbox',
-    '#title'  => t('Display vote percentage'),
-    '#default_value'  => variable_get('thumbvote_show_percentage',true),
-    '#description'    => t('Show total vote as positive percentage')
+  
+  $form['thumbvote_display_settings']['thumbvote_display_mode'] = array(
+    '#type'     => 'radios',
+    '#title'    => t('Display mode'),
+    '#default_value' => variable_get('thumbvote_display_mode',1),
+    '#description'   => t('How the vote result is displayed'),
+    '#options'       => $display_options
   );
+  
 
   $form['#submit'][] = 'thumb_vote_form_submit';
 
