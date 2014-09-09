@@ -179,8 +179,7 @@ function _thumb_vote_save($vote, $id, $type, $uid){
  * @return int -1 | 0 | 1
  */
 function _thumb_vote_get_user_vote($uid, $id, $type){
-  $v = db_select('thumbvotes')
-    ->fields('thumbvotes',array('vote'))
+  $v = db_select('thumbvotes')->fields('thumbvotes',array('vote'))
     ->condition('uid',$uid)
     ->condition('id',$id)
     ->condition('entity_type',$type)
@@ -213,11 +212,13 @@ function _thumb_vote_get_votes($id, $type, $mode){
         . _thumb_vote_span_wrap(-1*_thumb_vote_get_negative($id, $type),'negative');
     break;
     case 3: 
+      
       $percent = _thumb_vote_get_vote_percentage($id, $type);
-      $votes = _thumb_vote_span_wrap(
-          $percent.'%', 
-          ($percent >= 50 ? 'positive' : 'negative')
-        );
+      $color = _thumb_vote_percent_to_color($percent);
+      
+      $votes = '<span style="color:'.$color.'">'
+          . $percent.'%'
+          . '</span>';
     break;
   }
   
@@ -269,7 +270,7 @@ function _thumb_vote_get_vote_percentage($id, $type){
   
   $votes_positive = $votes_positive->execute()->fetchColumn();
   
-  return ($votes_positive / $votes_total) * 100;
+  return round(($votes_positive / $votes_total) * 100);
 }
 
 
@@ -302,4 +303,20 @@ function _thumb_vote_get_positive($id, $type){
   ));
   
   return $q ? $q->fetchColumn() : 0;
+}
+
+function _thumb_vote_percent_to_color($percent){
+  
+  $red = ((100-$percent)/100) * 255;
+  $green = ($percent/100) * 255;
+  
+  return '#'._thumb_vote_dec2hex($red)._thumb_vote_dec2hex($green).'00';
+}
+
+function _thumb_vote_dec2hex($int){
+  $result = dechex($int);
+  if(strlen($result) < 2){
+    $result = '0'.$result;
+  }
+  return $result;
 }
